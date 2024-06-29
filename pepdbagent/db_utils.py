@@ -172,7 +172,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    namespace: Mapped[str]
+    namespace: Mapped[str] = mapped_column(nullable=False, unique=True)
     stars_mapping: Mapped[List["Stars"]] = relationship(
         back_populates="user_mapping",
         cascade="all, delete-orphan",
@@ -228,6 +228,38 @@ class ViewSampleAssociation(Base):
     view_id = mapped_column(ForeignKey("views.id", ondelete="CASCADE"), primary_key=True)
     sample: Mapped["Samples"] = relationship(back_populates="views")
     view: Mapped["Views"] = relationship(back_populates="samples")
+
+
+class SchemaTags(Base):
+    """
+    Tags associated with schemas in the database
+    """
+
+    __tablename__ = "schema_tags"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tag: Mapped[str] = mapped_column(nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(nullable=False)
+
+    schemas_mapping: Mapped[List["Schemas"]] = relationship(back_populates="tag_mapping")
+
+
+class Schemas(Base):
+    """
+    Table representation of schemas in the database
+    """
+
+    __tablename__ = "schemas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    namespace: Mapped[str] = mapped_column(ForeignKey("users.namespace", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(nullable=False)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("schema_tags.id", ondelete="CASCADE"))
+    tag_mapping: Mapped["SchemaTags"] = relationship(back_populates="schemas_mapping")
+
+    schema_dict: Mapped[dict] = mapped_column(JSON, server_default=FetchedValue())
+
+    __table_args__ = (UniqueConstraint("namespace", "name"),)
 
 
 class BaseEngine:
